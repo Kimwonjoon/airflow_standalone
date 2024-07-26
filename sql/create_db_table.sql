@@ -11,5 +11,6 @@ CREATE TABLE IF NOT EXISTS history_db.tmp_cmd_usage (
 CREATE TABLE IF NOT EXISTS history_db.cmd_usage (
 	dt DATE,
 	command VARCHAR(500),
-	cnt INT
+	cnt INT,
+	tmp_dt VARCHAR(500)
 );
