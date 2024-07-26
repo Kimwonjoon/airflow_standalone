@@ -18,7 +18,7 @@ with DAG(
         'retry_delay': timedelta(seconds=3)
     },
     description='hello world DAG',
-    schedule_interval=timedelta(days=1),
+    schedule="10 4 * * *",
     start_date=datetime(2024, 7, 10),
     catchup=True,
     tags=['import','db'],
@@ -36,7 +36,10 @@ with DAG(
     )
     task_check = BashOperator(
             task_id = 'check',
-            bash_command = "bash {{ var.value.CHECK_SH }} {{ds_nodash}}"
+            bash_command = """
+                DONE_PATH=~/data/done/{{ds_nodash}}/_DONE
+                bash {{ var.value.CHECK_SH }} $DONE_PATH
+            """
             #bash_command = """
             #   echo "check"
             #   DONE_PATH=~/data/done/{{ds_nodash}}
@@ -84,14 +87,26 @@ with DAG(
             task_id = 'to.base',
             bash_command = """
                 echo "to.base"
-                SQL={{ var.value.SQL_PATH }}/temp2base.sql
-                echo "SQL_PATH=$SQL"
-                MYSQL_PWD='{{ var.value.DB_PASSWD }}' mysql -u root < $SQL                
+                bash {{ var.value.SH_HOME }}/tmp2base.sh {{ ds }}
             """                                                                                 )
+#    task_base = BashOperator(
+#            task_id = 'to.base',
+#            bash_command = """
+#                echo "to.base"
+#                SQL={{ var.value.SQL_PATH }}/temp2base.sql
+#                echo "SQL_PATH=$SQL"
+#                MYSQL_PWD='{{ var.value.DB_PASSWD }}' mysql -u root < $SQL                
+#            """                                                                                 )
     task_make = BashOperator(
             task_id = 'make.done',
             bash_command = """
-                echo "make.done"
+                figlet "make.done"
+                DONE_PATH={{ var.value.IMPORT_DONE_PATH }}/{{ds_nodash}}
+                mkdir -p $DONE_PATH
+                echo "IMPORT_DONE_PATH=$DONE_PATH"
+                touch $DONE_PATH/_DONE
+
+                figlet "make.done.end"
             """                                                                                 )
     task_start >> task_check >> task_csv
     task_csv >> task_create_table >> task_tmp >> task_base >> task_make >> task_end

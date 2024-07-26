@@ -17,7 +17,7 @@ with DAG(
         'retry_delay': timedelta(seconds=3)
     },
     description='hello world DAG',
-    schedule_interval=timedelta(days=1),
+    schedule="10 4 * * *",
     start_date=datetime(2024, 7, 10),
     catchup=True,
     tags=['simple','bash'],
