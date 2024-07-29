@@ -18,9 +18,11 @@ with DAG(
     # These args will get passed on to each operator
     # You can override them on a per-task basis during operator initialization
     default_args={
-        'depends_on_past': False,
+        'depends_on_past': True,
+        'email_on_failure': False,
+        'email_on_retry': False,
         'retries': 1,
-        'retry_delay': timedelta(seconds=3)
+        'retry_delay': timedelta(minutes=5)
     },
     description='hello world DAG',
     schedule="10 2 * * *",
