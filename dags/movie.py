@@ -23,8 +23,8 @@ with DAG(
         'depends_on_past': False,
         'retries': 1,
         'retry_delay': timedelta(seconds=3),
-        'max_active_tasks' : 3,
         'max_active_runs' : 1,
+        'max_active_tasks' : 3,
     },
     description='hello world DAG',
     schedule="10 2 * * *",
@@ -61,7 +61,7 @@ with DAG(
             return rm_dir.task_id
         # 파일이 없다면 get_data로
         else:
-            return task_get_data.task_id, echo_task.task_id
+            return get_start.task_id, echo_task.task_id
 
     branch_op = BranchPythonOperator(
             task_id="branch_op", 
@@ -76,20 +76,19 @@ with DAG(
     nation_k = EmptyOperator(task_id='nation.k') # 한국 영화
     nation_f = EmptyOperator(task_id='nation.f') # 외국 영화
 
-    join_task = BashOperator(
-            task_id = 'join',
+    throw_err = BashOperator(
+            task_id = 'throw.err',
             bash_command = "exit 1",
             trigger_rule = "all_done"
             )
-    get_start = EmptyOperator(task_id='get.start', trigger_rule = 'one_success')
-    get_end = EmptyOperator(task_id='get.end', trigger_rule = 'one_success')
+    get_start = EmptyOperator(task_id='get.start', trigger_rule = 'all_done')
+    get_end = EmptyOperator(task_id='get.end', trigger_rule = 'all_done')
     
     task_get_data = PythonVirtualenvOperator(
             task_id='get.data',
             python_callable=get_data,
             requirements=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3/api"],
             system_site_packages=False,
-            trigger_rule = "all_done",
             #venv_cache_path = "/home/kimpass189/tmp2/airflow_venv/get_data"
     )
     task_save_data = PythonVirtualenvOperator(
@@ -110,11 +109,10 @@ with DAG(
             bash_command = "echo 'task'"
             )
 
-    task_start >>[branch_op, join_task]
+    task_start >>[branch_op, throw_err]
     branch_op >> [rm_dir, get_start, echo_task]
     rm_dir >> get_start
-    echo_task >> get_start
-    join_task >> get_start
+    throw_err >> task_save_data
     get_start >> [task_get_data, multi_y, multi_n, nation_k, nation_f]
 
     [task_get_data, multi_y, multi_n, nation_k, nation_f] >> get_end >> task_save_data >> task_end
