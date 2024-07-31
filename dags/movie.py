@@ -15,20 +15,16 @@ from airflow.operators.python import (
         )
 from pprint import pprint
 
-def get_emp(id, rule="all_success"):
-    op = EmptyOperator(task_id=id, trigger_rule=rule)
-    return op
-
 with DAG(
     'movie',
     # These args will get passed on to each operator
     # You can override them on a per-task basis during operator initialization
     default_args={
-        'depends_on_past': True,
-        'email_on_failure': False,
-        'email_on_retry': False,
+        'depends_on_past': False,
         'retries': 1,
-        'retry_delay': timedelta(seconds=3)
+        'retry_delay': timedelta(seconds=3),
+        'max_active_tasks' : 3,
+        'max_active_runs' : 1,
     },
     description='hello world DAG',
     schedule="10 2 * * *",
@@ -72,8 +68,14 @@ with DAG(
             python_callable=branch_func
             )
 
-    task_start = get_emp('start')
-    task_end = get_emp('end', 'all_done') 
+    task_start = EmptyOperator(task_id='start')
+    task_end = EmptyOperator(task_id='end')
+
+    multi_y = EmptyOperator(task_id='multi.y') # 다양성 영화
+    multi_n = EmptyOperator(task_id='multi.n') # 상업 영화
+    nation_k = EmptyOperator(task_id='nation.k') # 한국 영화
+    nation_f = EmptyOperator(task_id='nation.f') # 외국 영화
+
     join_task = BashOperator(
             task_id = 'join',
             bash_command = "exit 1",
@@ -108,9 +110,10 @@ with DAG(
 
     task_start >> branch_op
     task_start >> join_task >> task_save_data
-
-    branch_op >> [task_get_data, rm_dir, echo_task]
-    rm_dir >> task_get_data
+    
+    branch_op >> [task_get_data, multi_y, multi_n, nation_k, nation_f]
+    branch_op >> [rm_dir, echo_task]
+    rm_dir >> [task_get_data, multi_y, multi_n, nation_k, nation_f]
     echo_task >> task_save_data
 
-    task_get_data >> task_save_data >> task_end
+    [task_get_data, multi_y, multi_n, nation_k, nation_f] >> task_save_data >> task_end
