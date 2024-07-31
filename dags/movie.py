@@ -81,6 +81,8 @@ with DAG(
             bash_command = "exit 1",
             trigger_rule = "all_done"
             )
+    get_start = EmptyOperator(task_id='get.start', trigger_rule = 'one_success')
+    get_end = EmptyOperator(task_id='get.end', trigger_rule = 'one_success')
     
     task_get_data = PythonVirtualenvOperator(
             task_id='get.data',
@@ -108,12 +110,11 @@ with DAG(
             bash_command = "echo 'task'"
             )
 
-    task_start >> branch_op
-    task_start >> join_task >> task_save_data
-    
-    branch_op >> [task_get_data, multi_y, multi_n, nation_k, nation_f]
-    branch_op >> [rm_dir, echo_task]
-    rm_dir >> [task_get_data, multi_y, multi_n, nation_k, nation_f]
-    echo_task >> task_save_data
+    task_start >>[branch_op, join_task]
+    branch_op >> [rm_dir, get_start, echo_task]
+    rm_dir >> get_start
+    echo_task >> get_start
+    join_task >> get_start
+    get_start >> [task_get_data, multi_y, multi_n, nation_k, nation_f]
 
-    [task_get_data, multi_y, multi_n, nation_k, nation_f] >> task_save_data >> task_end
+    [task_get_data, multi_y, multi_n, nation_k, nation_f] >> get_end >> task_save_data >> task_end
