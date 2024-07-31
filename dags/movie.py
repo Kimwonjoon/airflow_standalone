@@ -42,7 +42,18 @@ with DAG(
     def func_multi_nation(ds_nodash, multi_nation):
         from mov.api.call import save2df
         df = save2df(load_dt = ds_nodash, url_param = multi_nation)
-        print(df.head())
+
+        print(df[['movieCd', 'movieNm']].head(5))
+        
+        for k, v in multi_nation.items():
+            df[k] = v
+        
+        #p_cols = list(url_param.keys()).insert(0, 'load_dt')
+        p_cols = ['load_dt'] + list(multi_nation.keys())
+        df.to_parquet('~/tmp/test_parquet', 
+                partition_cols=p_cols
+                # partition_cols=['load_dt', 'movieKey']
+        )
 
 #    def func_multi_n(ds_nodash):
 #        from mov.api.call import save2df
@@ -62,17 +73,15 @@ with DAG(
     #########################################################
 
     def save_data(ds_nodash):
-        from mov.api.call import df2parquet
-        df2parquet(ds_nodash)
-#        from mov.api.call import get_key, echo, change2df
-#        df = change2df(load_dt = ds_nodash)
-#
-#        print("*" * 10)
-#        print(df.head(10))
-#        print("*" * 10)
-#        print(df.dtypes)
-#        g = df.groupby('openDt')['audiCnt'].sum().reset_index()
-#        print(g.head())
+        from mov.api.call import get_key, echo, change2df
+        df = change2df(load_dt = ds_nodash)
+
+        print("*" * 10)
+        print(df.head(10))
+        print("*" * 10)
+        print(df.dtypes)
+        g = df.groupby('openDt')['audiCnt'].sum().reset_index()
+        print(g.head())
 
     def branch_func(ds_nodash):
         import os
