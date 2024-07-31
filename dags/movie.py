@@ -32,24 +32,47 @@ with DAG(
     catchup=True,
     tags=['movie'],
 ) as dag:
+    ################### 데이터 받아오는 곳 ##################
+
     def get_data(ds_nodash):
-        print(ds_nodash)
-        from mov.api.call import get_key, save2df
-        key = get_key()
-        print(f"MOVIE_API_KEY => {key}")
+        from mov.api.call import save2df
         df = save2df(load_dt = ds_nodash)
         print(df.head())
 
-    def save_data(ds_nodash):
-        from mov.api.call import get_key, echo, change2df
-        df = change2df(load_dt = ds_nodash)
+    def func_multi_nation(ds_nodash, multi_nation):
+        from mov.api.call import save2df
+        df = save2df(load_dt = ds_nodash, url_param = multi_nation)
+        print(df.head())
 
-        print("*" * 10)
-        print(df.head(10))
-        print("*" * 10)
-        print(df.dtypes)
-        g = df.groupby('openDt')['audiCnt'].sum().reset_index()
-        print(g.head())
+#    def func_multi_n(ds_nodash):
+#        from mov.api.call import save2df
+#        df = save2df(load_dt = ds_nodash, url_param = {'multiMovieYn' : 'N'})
+#        print(df.head())
+#
+#    def func_nation_k(ds_nodash):
+#        from mov.api.call import save2df
+#        df = save2df(load_dt = ds_nodash, url_param = {'repNationCd' : 'K'})
+#        print(df.head())
+#
+#    def func_nation_f(ds_nodash):
+#        from mov.api.call import save2df
+#        df = save2df(load_dt = ds_nodash, url_param = {'repNationCd' : 'F'})
+#        print(df.head())
+
+    #########################################################
+
+    def save_data(ds_nodash):
+        from mov.api.call import df2parquet
+        df2parquet(ds_nodash)
+#        from mov.api.call import get_key, echo, change2df
+#        df = change2df(load_dt = ds_nodash)
+#
+#        print("*" * 10)
+#        print(df.head(10))
+#        print("*" * 10)
+#        print(df.dtypes)
+#        g = df.groupby('openDt')['audiCnt'].sum().reset_index()
+#        print(g.head())
 
     def branch_func(ds_nodash):
         import os
@@ -71,10 +94,38 @@ with DAG(
     task_start = EmptyOperator(task_id='start')
     task_end = EmptyOperator(task_id='end')
 
-    multi_y = EmptyOperator(task_id='multi.y') # 다양성 영화
-    multi_n = EmptyOperator(task_id='multi.n') # 상업 영화
-    nation_k = EmptyOperator(task_id='nation.k') # 한국 영화
-    nation_f = EmptyOperator(task_id='nation.f') # 외국 영화
+    multi_y = PythonVirtualenvOperator(
+            task_id='multi.y',
+            python_callable=func_multi_nation,
+            requirements=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3.1/api"],
+            op_kwargs = {'multi_nation' : {'multiMovieYn' : 'Y'}},
+            system_site_packages=False,
+            #venv_cache_path = "/home/kimpass189/tmp2/airflow_venv/get_data"
+    ) # 다양성 영화
+    multi_n = PythonVirtualenvOperator(
+            task_id='multi.n',
+            python_callable=func_multi_nation,
+            requirements=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3.1/api"],
+            op_kwargs = {'multi_nation' : {'multiMovieYn' : 'N'}},
+            system_site_packages=False,
+            #venv_cache_path = "/home/kimpass189/tmp2/airflow_venv/get_data"
+    ) # 상업 영화
+    nation_k = PythonVirtualenvOperator(
+            task_id='nation_k',
+            python_callable=func_multi_nation,
+            requirements=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3.1/api"],
+            op_kwargs = {'multi_nation' : {'repNationCd' : 'K'}},
+            system_site_packages=False,
+            #venv_cache_path = "/home/kimpass189/tmp2/airflow_venv/get_data"
+    ) # 한국 영화
+    nation_f = PythonVirtualenvOperator(
+            task_id='nation_f',
+            python_callable=func_multi_nation,
+            requirements=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3.1/api"],
+            op_kwargs = {'multi_nation' : {'repNationCd' : 'F'}},
+            system_site_packages=False,
+            #venv_cache_path = "/home/kimpass189/tmp2/airflow_venv/get_data"
+    ) # 외국 영화
 
     throw_err = BashOperator(
             task_id = 'throw.err',
@@ -87,14 +138,14 @@ with DAG(
     task_get_data = PythonVirtualenvOperator(
             task_id='get.data',
             python_callable=get_data,
-            requirements=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3/api"],
+            requirements=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3.1/api"],
             system_site_packages=False,
             #venv_cache_path = "/home/kimpass189/tmp2/airflow_venv/get_data"
     )
     task_save_data = PythonVirtualenvOperator(
             task_id='save.data',
             python_callable=save_data,
-            requirements=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3/api"],
+            requirements=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3.1/api"],
             system_site_packages=False,
             trigger_rule = "one_success",
             #venv_cache_path = "/home/kimpass189/tmp2/airflow_venv/get_data"
