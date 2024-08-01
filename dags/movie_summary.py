@@ -28,22 +28,39 @@ with DAG(
     catchup=True,
     tags=['movie', 'summary', 'describe'],
 ) as dag:
-    task_start = EmptyOperator(task_id='start')
-    task_end = EmptyOperator(task_id='end')
+    REQUIREMENTS=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3.1/api"]
+    def gen_empty(*ids):
+        tasks = []
+        for ind in ids:
+            task = EmptyOperator(task_id = ind)
+            tasks.append(task)
+        return tuple(tasks)
 
-    apply_type = EmptyOperator(
-            task_id = 'apply.type',
+    def gen_vpython(**kw):
+        id = kw['id']
+        func_o = kw['func_o']
+        op_kw = kw['op']
+        task = PythonVirtualenvOperator(
+            task_id=id,
+            python_callable=func_o,
+            requirements=REQUIREMENTS,
+            system_site_packages=False,
+            op_kwargs = op_kw
             )
+        return task
 
-    merge_df = EmptyOperator(
-            task_id = 'merge.df',
-            )
+    def proc_data(ds_nodash, **kwargs):
+        print(ds_nodash, kwargs)
+        print('preprocessing')
 
-    df_dup = EmptyOperator(
-            task_id = 'df.dup',
-            )
+    start, end = gen_empty('start', 'end')
+            
+    apply_type = gen_vpython(id = 'apply.type', op = {'It can move' : 'or not'}, func_o = proc_data)
 
-    summary_df = EmptyOperator(
-            task_id = 'summary.df',
-            )
-    task_start >> apply_type >> merge_df >> df_dup >> summary_df >> task_end
+    merge_df = gen_empty('merge.df')[0]
+
+    df_dup = gen_empty('df.dup')[0]
+
+    summary_df = gen_empty('summary.df')[0]
+
+    start >> apply_type >> merge_df >> df_dup >> summary_df >> end
