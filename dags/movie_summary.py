@@ -11,7 +11,6 @@ from airflow.operators.python import (
         PythonVirtualenvOperator, 
         BranchPythonOperator
         )
-from pprint import pprint
 
 with DAG(
     'movie_summmary',
@@ -28,7 +27,7 @@ with DAG(
     catchup=True,
     tags=['movie', 'summary', 'describe'],
 ) as dag:
-    REQUIREMENTS=["git+https://github.com/Kimwonjoon/kim_movie.git@0.3.1/api"]
+    REQUIREMENTS=["git+https://github.com/Kimwonjoon/mov_egg.git@0.5.2/egg"]
     def gen_empty(*ids):
         tasks = []
         for ind in ids:
@@ -40,6 +39,11 @@ with DAG(
         id = kw['id']
         func_o = kw['func_o']
         op_kw = kw['op']
+#        task = PythonOperator(
+#            task_id=id,
+#            python_callable=func_o,
+#            op_kwargs = op_kw
+#            )
         task = PythonVirtualenvOperator(
             task_id=id,
             python_callable=func_o,
@@ -50,17 +54,27 @@ with DAG(
         return task
 
     def proc_data(ds_nodash, **kwargs):
-        print(ds_nodash, kwargs)
+        print(ds_nodash)
+        print(kwargs)
         print('preprocessing')
+
+    def proc_merge(**kwargs):
+        load_dt = kwargs['ds_nodash']
+        from mov_egg.u import mer
+        df = mer(load_dt)
+        print("*" * 20)
+        print(df)
 
     start, end = gen_empty('start', 'end')
             
     apply_type = gen_vpython(id = 'apply.type', op = {'It can move' : 'or not'}, func_o = proc_data)
 
-    merge_df = gen_empty('merge.df')[0]
+    merge_df = gen_vpython(id = 'merge.df',
+            op = {'It can move' : 'or not'},
+            func_o = proc_merge)
 
     df_dup = gen_empty('df.dup')[0]
 
     summary_df = gen_empty('summary.df')[0]
 
-    start >> apply_type >> merge_df >> df_dup >> summary_df >> end
+    start  >> merge_df >> df_dup >> apply_type >> summary_df >> end
