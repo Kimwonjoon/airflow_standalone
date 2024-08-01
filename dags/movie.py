@@ -52,23 +52,7 @@ with DAG(
         p_cols = ['load_dt'] + list(multi_nation.keys())
         df.to_parquet('~/tmp/test_parquet', 
                 partition_cols=p_cols
-                # partition_cols=['load_dt', 'movieKey']
         )
-
-#    def func_multi_n(ds_nodash):
-#        from mov.api.call import save2df
-#        df = save2df(load_dt = ds_nodash, url_param = {'multiMovieYn' : 'N'})
-#        print(df.head())
-#
-#    def func_nation_k(ds_nodash):
-#        from mov.api.call import save2df
-#        df = save2df(load_dt = ds_nodash, url_param = {'repNationCd' : 'K'})
-#        print(df.head())
-#
-#    def func_nation_f(ds_nodash):
-#        from mov.api.call import save2df
-#        df = save2df(load_dt = ds_nodash, url_param = {'repNationCd' : 'F'})
-#        print(df.head())
 
     #########################################################
 
