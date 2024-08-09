@@ -53,5 +53,5 @@ ON m.movieCd = n.movieCd""")
 
 df_j.createOrReplaceTempView("join_df")
 
-df_j.write.mode('overwrite').partitionBy("load_dt", "multiMovieYn", "repNationCd").parquet("/home/kimpass189/data/movie/hive")
+df_j.write.mode('append').partitionBy("load_dt", "multiMovieYn", "repNationCd").parquet("/home/kimpass189/data/movie/hive")
 spark.stop()

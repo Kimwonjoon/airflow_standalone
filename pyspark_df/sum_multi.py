@@ -17,7 +17,7 @@ SELECT
 FROM first_day
 GROUP BY multiMovieYn
 """)
-df_n.write.mode('overwrite').partitionBy("load_dt").parquet("/home/kimpass189/data/movie/sum-multi")
+df_n.write.mode('append').partitionBy("load_dt").parquet("/home/kimpass189/data/movie/sum-multi")
 
 df_r = spark.sql(f"""
 SELECT
@@ -30,6 +30,6 @@ FROM first_day
 GROUP BY repNationCd
 """)
 
-df_r.write.mode('overwrite').partitionBy("load_dt").parquet("/home/kimpass189/data/movie/sum-nation")
+df_r.write.mode('append').partitionBy("load_dt").parquet("/home/kimpass189/data/movie/sum-nation")
 
 spark.stop()

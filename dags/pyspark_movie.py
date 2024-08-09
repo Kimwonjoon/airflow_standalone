@@ -25,7 +25,7 @@ with DAG(
     end_date=datetime(2016,1,1),
     catchup=True,
     tags=["pyspark"],
-    max_active_runs=1,  # 동시에 실행될 수 있는 최대 DAG 인스턴스 수
+#    max_active_runs=1,  # 동시에 실행될 수 있는 최대 DAG 인스턴스 수
 #    max_active_tasks=3,  # 동시에 실행될 수 있는 최대 태스크 수
 ) as dag:
     def re_parti(ds_nodash):
