@@ -1,6 +1,9 @@
 # Airflow
 ### Add movies-dynamic-json.py
 에어플로우에서 json 형식의 파일을 받아 spark sql로 처리
+# Data
+![image](https://github.com/user-attachments/assets/bced0661-4163-4483-9e45-dbd2de0c7c7c)
+
 # Result
 ```
 # 회사별 영화 개수
