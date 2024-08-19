@@ -1,3 +1,3 @@
-# Airflow with Spark
-### Add pyspark_movie.py
-에어플로우 dag에서 bashcommand를 이용해 spark 코드가 담긴 py 파일을 실행시킵니다
+# Airflow
+### Add movies-dynamic-json.py
+에어플로우에서 json 형식의 파일을 받아 spark sql로 처리
