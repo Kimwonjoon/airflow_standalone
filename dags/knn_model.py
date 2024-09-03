@@ -13,10 +13,10 @@ from airflow.operators.python import (
         )
 import pandas as pd
 import os
-from sklearn.metrics import f1_score
-from sklearn.neighbors import KNeighborsClassifier
-import pickle
-from fishmlserv.model.manager import get_model_path
+#from sklearn.metrics import f1_score
+#from sklearn.neighbors import KNeighborsClassifier
+#import pickle
+#from fishmlserv.model.manager import get_model_path
 
 with DAG(
     'KNN-Model-predict',
@@ -54,7 +54,13 @@ with DAG(
         df.to_parquet('~/data/fish_parquet/fish.parquet', index = False)
         return True
     
-    def knn_predict():
+    def knn_predict_func():
+        import pandas as pd
+        import os
+        from sklearn.metrics import f1_score
+        from sklearn.neighbors import KNeighborsClassifier
+        import pickle
+        from fishmlserv.model.manager import get_model_path
         df = pd.read_parquet('~/data/fish_parquet/fish.parquet')
         # 독립변수, 종속변수 구분
         x_test = df[['length','weight']]
@@ -92,9 +98,15 @@ with DAG(
             task_id = "load.csv",
             python_callable=csvtoparquet)
 
-    knn_predict = PythonOperator(
-            task_id = "knn.predict",
-            python_callable=knn_predict)
+#    knn_predict = PythonOperator(
+#            task_id = "knn.predict",
+#            python_callable=knn_predict)
+    knn_predict = PythonVirtualenvOperator(
+            task_id='knn.predict',
+            python_callable=knn_predict_func,
+            requirements=["git+https://github.com/Kimwonjoon/fish_ml.git@0.7/manifest"],
+            system_site_packages=False,
+    )
 
     knn_agg = PythonOperator(
             task_id = "knn.agg",
