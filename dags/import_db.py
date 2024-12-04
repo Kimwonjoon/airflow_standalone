@@ -58,22 +58,41 @@ with DAG(
                 COUNT_PATH=~/data/count/{{ds_nodash}}
                 CSV_PATH=~/data/csv/{{ds_nodash}}
                 mkdir -p $CSV_PATH
-                cat "${COUNT_PATH}/count.log" | awk '{print "{{ds}}," $2 "," $1}' > ${CSV_PATH}/csv.csv
-            """                                                                                 )
+                #cat "${COUNT_PATH}/count.log" | awk '{print "{{ds}}," $2 "," $1}' > ${CSV_PATH}/csv.csv
+                #cat "${COUNT_PATH}/count.log" | awk '{print "\\"{{ds}}\\",\\"" $2 "\\",\\"" $1 "\\""}' > ${CSV_PATH}/csv.csv
+                cat "${COUNT_PATH}/count.log" | awk '{print "^{{ds}}^,^" $2 "^,^" $1 "^"}' > ${CSV_PATH}/csv.csv
+            """                         
+            )
+    task_create_table = BashOperator(
+            task_id = "create.table",
+            bash_command = """
+                SQL={{ var.value.SQL_PATH }}/create_db_table.sql
+                echo "SQL_PATH=$SQL"
+                MYSQL_PWD='{{ var.value.DB_PASSWD }}' mysql -u root < $SQL
+            """
+            )
     task_tmp = BashOperator(
             task_id = 'to.tmp',
             bash_command = """
                 echo "to.tmp"
-            """                                                                                 )
+                CSV_FILE=~/data/csv/{{ds_nodash}}/csv.csv
+                echo $CSV_FILE
+                bash {{ var.value.SH_HOME }}/csv2sql.sh $CSV_FILE {{ ds }}
+            """
+            )
     task_base = BashOperator(
             task_id = 'to.base',
             bash_command = """
                 echo "to.base"
+                SQL={{ var.value.SQL_PATH }}/temp2base.sql
+                echo "SQL_PATH=$SQL"
+                MYSQL_PWD='{{ var.value.DB_PASSWD }}' mysql -u root < $SQL                
             """                                                                                 )
     task_make = BashOperator(
             task_id = 'make.done',
             bash_command = """
                 echo "make.done"
             """                                                                                 )
-    task_start >> task_check >> task_csv >> task_tmp >> task_base >> task_make >> task_end
+    task_start >> task_check >> task_csv
+    task_csv >> task_create_table >> task_tmp >> task_base >> task_make >> task_end
     task_check >> task_err >> task_end
